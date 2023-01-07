@@ -22,7 +22,7 @@ def load_data(path):
   data = _pickle.load(data)
   return data
 
-data = load_data('data/lpsc2023_data_arnaut.pbz2')
+data = load_data('arnaut/data/lpsc2023_data_arnaut.pbz2')
 
 wavelength = np.array(data['wavelength']['value'])
 scattering_cross_section = data['wavelength']['data']['scattering_cross_section']
