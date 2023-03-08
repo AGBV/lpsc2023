@@ -23,7 +23,7 @@ def load_data(path):
   return data
 
 st.title('Yet Another Scattering Framework')
-st.header('Data visualizer of the LPSC 2023 abstract of Arnaut et al.')
+st.header('Data visualizer of the LPSC 2023 abstract of Arnaut et al. [2997](https://www.hou.usra.edu/meetings/lpsc2023/pdf/2997.pdf)')
 data_file = 'arnaut/data/lpsc2023_data_arnaut.pbz2'
 with st.sidebar:
   path = r'arnaut/data/*.pbz2'
