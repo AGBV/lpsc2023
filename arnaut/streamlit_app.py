@@ -26,7 +26,7 @@ st.title('Yet Another Scattering Framework')
 st.header('Data visualizer of the LPSC 2023 abstract of Arnaut et al.')
 data_file = 'arnaut/data/lpsc2023_data_arnaut.pbz2'
 with st.sidebar:
-  path = r'data/*.pbz2'
+  path = r'arnaut/data/*.pbz2'
   files = glob.glob(path)
   data_file = st.selectbox('File', sorted(files), 0)
 
