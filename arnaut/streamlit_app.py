@@ -2,34 +2,44 @@ import streamlit as st
 import numpy as np
 import bz2
 import _pickle
+import glob
 
 from plotly.subplots import make_subplots
 from plotly import colors
 import plotly.graph_objects as go
 
-print('Starting...')
+length_suffix = 'μm'
 
 st.set_page_config(
   page_title = 'YASF',
   layout = 'wide'
 )
 
-st.title('Yet Another Scattering Framework')
-
-@st.cache
+# @st.cache
 def load_data(path):
   data = bz2.BZ2File(path, 'rb')
   data = _pickle.load(data)
+
   return data
 
-data = load_data('arnaut/data/lpsc2023_data_arnaut.pbz2')
+st.title('Yet Another Scattering Framework')
+st.header('Data visualizer of the LPSC 2023 abstract of Arnaut et al.')
+data_file = 'arnaut/data/lpsc2023_data_arnaut.pbz2'
+with st.sidebar:
+  path = r'data/*.pbz2'
+  files = glob.glob(path)
+  data_file = st.selectbox('File', sorted(files), 0)
+
+data = load_data(data_file)
+# print(data['angle']['data']['phase_function'])
+# print(data['wavelength']['data']['scattering_cross_section'])
 
 wavelength = np.array(data['wavelength']['value'])
 scattering_cross_section = data['wavelength']['data']['scattering_cross_section']
 extinction_cross_section = data['wavelength']['data']['extinction_cross_section']
 single_scattering_albedo = data['wavelength']['data']['single_scattering_albedo']
 
-sampling_points = np.array(data['field']['sampling_points'])
+sampling_points = np.array(data['field']['sampling_points']) * 1e-3
 scattered_field = data['field']['scattered_field']
 
 scattering_angles = np.array(data['angle']['value'])
@@ -46,9 +56,21 @@ degree_of_linear_polarization_u_3d = data['angle']['data']['degree_of_linear_pol
 degree_of_circular_polarization    = data['angle']['data']['degree_of_circular_polarization']['normal']
 degree_of_circular_polarization_3d = data['angle']['data']['degree_of_circular_polarization']['spatial']
 
+indices = [0, 1, -2]
+import pandas as pd
+export = {
+  'angles': scattering_angles * 180 / np.pi
+}
+for idx in indices:
+  export[wavelength[idx]] = degree_of_linear_polarization[:, idx]
+# print(export)
+export = pd.DataFrame(data=export)
+export.to_csv(data_file.replace('pbz2', 'csv'), index=False)
+
+
 with st.sidebar:
   wavelength_slider = st.slider('Wavelength Slider', 0, wavelength.size - 1, 0, 1)
-  st.write(f'Current wavelength: {wavelength[wavelength_slider]:.2f}nm')
+  st.write(f'Current wavelength: {wavelength[wavelength_slider] / 1e3:.2f}&mu;m')
   
   plot_type_options = {
     'Phase Function': dict(
@@ -83,7 +105,7 @@ with st.sidebar:
 with st.container():
 
   col1, col2 = st.columns(2)
-  with col1:
+  with col2:
     fig = make_subplots(rows=3, cols=1,
                         shared_xaxes=True,
                         vertical_spacing=0.02)
@@ -135,7 +157,7 @@ with st.container():
     )
     st.plotly_chart(fig, use_container_width=True)
 
-  with col2:
+  with col1:
     eps = np.finfo(float).eps
 
     vals = np.linalg.norm(np.abs(scattered_field), axis = 2)
@@ -165,6 +187,17 @@ with st.container():
     fig.update_layout(
       height = 800,
       title = 'Electric Field',
+      scene = dict(
+        xaxis = dict(
+          ticksuffix = length_suffix
+        ),
+        yaxis = dict(
+          ticksuffix = length_suffix
+        ),
+        zaxis = dict(
+          ticksuffix = length_suffix
+        ),
+      )
     )
     st.plotly_chart(fig, use_container_width=True)
 
@@ -185,6 +218,7 @@ with st.container():
             color = cmap[wavelength_index]
           ),
           name = 'Linear Plot',
+          text = f'λ = {wavelength[wavelength_index]}',
           legendgrouptitle_text = f'p(θ, {wavelength[wavelength_index]:.2f}nm)',
           legendgroup = f'group{wavelength_index}'
         ), row = 1, col = 1
@@ -201,6 +235,7 @@ with st.container():
         ), row = 2, col = 1
       )
       fig.update_layout(
+        title = 'Log-plot and Polar-plot of the ' + plot_type,
         height = 1000,
         xaxis1 = dict(
           title = 'Phase Angle',
@@ -249,16 +284,20 @@ with st.container():
     p_max = np.max(p, axis = 1)
     points_extrem = points * np.max(p, axis = 1)[:, np.newaxis]
     fig.update_layout(
+      title = '3D representation of the ' + plot_type,
       height = 800,
       scene = dict(
         xaxis = dict(
-          range = [np.min(points_extrem[:, 0]), np.max(points_extrem[:, 0])]
+          range = [np.min(points_extrem[:, 0]), np.max(points_extrem[:, 0])],
+          showticklabels=False
         ),
         yaxis = dict(
-          range = [np.min(points_extrem[:, 1]), np.max(points_extrem[:, 1])]
+          range = [np.min(points_extrem[:, 1]), np.max(points_extrem[:, 1])],
+          showticklabels=False
         ),
         zaxis = dict(
-          range = [np.min(points_extrem[:, 2]), np.max(points_extrem[:, 2])]
+          range = [np.min(points_extrem[:, 2]), np.max(points_extrem[:, 2])],
+          showticklabels=False
         ),
         aspectratio=dict(
           x=1,
